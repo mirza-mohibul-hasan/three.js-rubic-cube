@@ -1,35 +1,63 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect } from "react";
+
+import { GUI } from "dat.gui";
+import * as THREE from "three";
+
+import SceneInit from "./utils/SceneInit";
+import RubiksCube from "./utils/RubiksCube";
 
 function App() {
-  const [count, setCount] = useState(0)
+  useEffect(() => {
+    const test = new SceneInit("myThreeJsCanvas");
+    test.initScene();
+    test.animate();
 
+    const r = new RubiksCube();
+    test.scene.add(r.rubiksCubeGroup);
+
+    const mouse = new THREE.Vector2();
+    const raycaster = new THREE.Raycaster();
+
+    function onMouseDown(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, test.camera);
+      const objects = raycaster.intersectObjects(r.rubiksCubeGroup.children);
+      const cubeObjects = objects.filter((c) => {
+        return c.object.type === "Mesh";
+      });
+      if (cubeObjects.length > 0) {
+        r.highlightCubes(cubeObjects[0].object);
+      }
+    }
+
+    const onKeyDown = (event) => {
+      if (event.repeat) {
+        return;
+      }
+      r.onKeyDown(event);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("mousedown", onMouseDown);
+
+    // const planeGeometry = new THREE.PlaneGeometry(2, 2);
+    // const planeMaterial = new THREE.MeshPhongMaterial({ color: '#ff0000' });
+    // const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+    // planeMesh.position.z = -2;
+    // group.add(planeMesh);
+
+    const gui = new GUI();
+    const folder = gui.addFolder("Rubik's Cube");
+    folder.add(r, "epsilon", 0.5, 3.5, 0.5);
+    folder.add(r, "consoleDebug");
+    folder.open();
+  }, []);
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div>
+      <canvas id="myThreeJsCanvas"></canvas>
+    </div>
+  );
 }
 
-export default App
+export default App;
